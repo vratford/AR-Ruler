@@ -14,11 +14,29 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     
     @IBOutlet var sceneView: ARSCNView!
     
+    @IBOutlet weak var Ruler: UIBarButtonItem!
+    
     var dotNodes = [SCNNode]() // Array of dotNodes initialized to o, will place dotNodes here when added
     var textNode = SCNNode()
+    var line = SCNPlane()  //using plane instead of line for geometry
     
+    @IBAction func Restart(_ sender: UIBarButtonItem) {
+        
+        textNode.removeFromParentNode()
+      
+        if dotNodes.count >= 2 {
+            for dot in dotNodes {
+                dot.removeFromParentNode()
+            }
+            dotNodes = [SCNNode]()
+        }
+    
+        
+    }
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        navigationItem.title = "AR Ruler"
         
         // Set the view's delegate
         sceneView.delegate = self
@@ -81,7 +99,9 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         dotNodes.append(dotNode)
         
         if dotNodes.count >= 2 {
+
             calculate()
+        
         }
 }
 
@@ -89,9 +109,9 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         let start = dotNodes[0]
         let end = dotNodes[1]
         
-        print(start.position)
-        print(end.position)
-        
+//        print(start.position)
+//        print(end.position)
+//
         let distance = (sqrt(
             pow(end.position.x - start.position.x, 2) +
             pow(end.position.y - start.position.y, 2) +
@@ -99,6 +119,8 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         )
         
         let displayDistance = round(distance)
+        
+//      addLine(length: displayDistance, atPosition: start.position)  // Create a line from a plane
         
         updateText(text: "\(displayDistance) in.", atPosition: end.position)
         
@@ -123,12 +145,35 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         
         textNode = SCNNode(geometry: textGeometry)
         
-        textNode.position = SCNVector3(position.x, position.y + 0.01, position.z)
+        textNode.position = SCNVector3(position.x - 0.005, position.y + 0.01, position.z)  // place text just to left of and above end point
         
-        textNode.scale = SCNVector3(0.01, 0.01, 0.01)
+        textNode.scale = SCNVector3(0.003, 0.003, 0.003)
         
         sceneView.scene.rootNode.addChildNode(textNode)
         
 
     }
+    
+    //Mark: - Adding a line but can't figure out how to remove once added.  Also need to change orientation or
+    func addLine(length: Float, atPosition startPosition: SCNVector3) {
+        
+        
+        let length = length/39.3701 // convert to meters as plane dimesnions are in meters
+        
+        line = SCNPlane(width: CGFloat(length), height: 0.005)  // Plance that is long as the point being measured, not very tall
+        
+        line.firstMaterial?.diffuse.contents = UIColor.white
+        
+        let lineStart = SCNNode() // point in 3d space
+
+        lineStart.position = SCNVector3(startPosition.x + length/2, startPosition.y, startPosition.z) // position of point
+
+        lineStart.geometry = line // node has geometry of line
+
+        sceneView.scene.rootNode.addChildNode(lineStart)  // place in sceneview
+
+        sceneView.autoenablesDefaultLighting = true // adds light and shadows
+
+        }
+    
 }
